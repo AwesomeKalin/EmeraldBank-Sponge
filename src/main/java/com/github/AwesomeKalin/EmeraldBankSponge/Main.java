@@ -1,17 +1,13 @@
 package com.github.AwesomeKalin.EmeraldBankSponge;
 
-import com.github.AwesomeKalin.EmeraldBankSponge.commands.Help;
-import com.github.AwesomeKalin.EmeraldBankSponge.commands.NoArgs;
+import com.github.AwesomeKalin.EmeraldBankSponge.commands.*;
 import com.google.inject.Inject;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
-import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.command.args.GenericArguments;
 import org.spongepowered.api.command.spec.CommandSpec;
-import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
@@ -20,10 +16,7 @@ import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.text.Text;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.File;
 
 @Plugin(
         id = "emeraldbank-sponge",
@@ -36,7 +29,6 @@ import java.nio.file.Paths;
 )
 public class Main {
 
-    private final Metrics metrics;
     PluginContainer plugin;
 
     @Inject
@@ -45,17 +37,16 @@ public class Main {
     @Inject
     public Main(Metrics.Factory metricsFactory){
         int pluginId = 10753;
-        metrics = metricsFactory.make(pluginId);
+        Metrics metrics = metricsFactory.make(pluginId);
     }
 
     @Inject
-    @ConfigDir(sharedRoot = false)
-    private Path bankDir;
+    @DefaultConfig(sharedRoot = true)
+    private File bankFile;
 
-    private Path bankFile = Paths.get(bankDir + "/bank.conf");
-
-    private ConfigurationLoader<CommentedConfigurationNode> bankLoader = HoconConfigurationLoader.builder().setPath(bankFile).build();
-    private CommentedConfigurationNode bankNode;
+    @Inject
+    @DefaultConfig(sharedRoot = true)
+    ConfigurationLoader<CommentedConfigurationNode> bankManager;
 
     @Listener
     public void onPreInit(GamePreInitializationEvent e){
@@ -66,61 +57,39 @@ public class Main {
                 .permission("emeraldbank-sponge.commands.help")
                 .executor(new Help())
                 .build();
+        CommandSpec new1 = CommandSpec.builder()
+            .description(Text.of("Make a new bank"))
+            .permission("emeraldbank-sponge.commands.new")
+            .arguments(
+                    GenericArguments.onlyOne(GenericArguments.player(Text.of("name")))
+            )
+            .executor(new New())
+            .build();
+        CommandSpec deposit = CommandSpec.builder()
+                .description(Text.of("Deposit emeralds into the specified bank"))
+                .permission("emeraldbank-sponge.commands.deposit")
+                .arguments(
+                        GenericArguments.onlyOne(GenericArguments.player(Text.of("name"))),
+                        GenericArguments.onlyOne(GenericArguments.player(Text.of("emeralds"))),
+                        GenericArguments.onlyOne(GenericArguments.player(Text.of("iron")))
+                )
+                .executor(new Deposit())
+                .build();
         CommandSpec noArgs = CommandSpec.builder()
                 .description(Text.of("Throws an error. Instead do /eb help to see what to do"))
                 .executor(new NoArgs())
                 .child(help, "help")
+                .child(new1, "new")
+                .child(deposit, "deposit")
                 .build();
 
         Sponge.getCommandManager().register(plugin, noArgs, "emeraldbank", "eb", "bank", "emerald", "banking");
         logger.info("[EmeraldBank] Commands prepared!");
         logger.info("[EmeraldBank] Preparing banks!");
-        if(!Files.exists(bankDir)){
-            try{
-                Files.createDirectories(bankDir);
-            }catch(IOException io){
-                io.printStackTrace();
-            }
-        }
-        setup();
+        ConfigurationManager.getInstance().setup(bankFile, bankManager);
         logger.info("[EmeraldBank] Banks prepared!");
         logger.info("[EmeraldBank] Preparing Metrics!");
         logger.info("[EmeraldBank] Metrics prepared!");
-    }
-
-    public void setup(){
-        if(!Files.exists(bankFile)){
-            try{
-                Files.createFile(bankFile);
-            }catch(IOException e){
-                e.printStackTrace();
-            }
-        }else{
-            load();
-        }
-    }
-
-    public void load(){
-        try{
-            bankNode = bankLoader.load();
-        }catch(IOException e){
-            e.printStackTrace();
-        }
-    }
-    public void save(){
-        try{
-            bankLoader.save(bankNode);
-        }catch(IOException e){
-            e.printStackTrace();
-        }
-    }
-
-    public Path getBankDir(){
-        return bankDir;
-    }
-
-    public CommentedConfigurationNode get(){
-        return bankNode;
     }
 
     @Listener
