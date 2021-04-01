@@ -85,6 +85,12 @@ public class Main {
                 )
                 .executor(new Atm())
                 .build();
+        CommandSpec amount = CommandSpec.builder()
+                .description(Text.of("See how many emeralds and iron a bank has"))
+                .permission("emeraldbank-sponge.commands.amount")
+                .arguments(GenericArguments.onlyOne(GenericArguments.player(Text.of("name"))))
+                .executor(new Amount())
+                .build();
         CommandSpec noArgs = CommandSpec.builder()
                 .description(Text.of("Throws an error. Instead do /eb help to see what to do"))
                 .executor(new NoArgs())
@@ -92,6 +98,7 @@ public class Main {
                 .child(new1, "new")
                 .child(deposit, "deposit")
                 .child(atm, "atm")
+                .child(amount, "amount")
                 .build();
 
         Sponge.getCommandManager().register(plugin, noArgs, "emeraldbank", "eb", "bank", "emerald", "banking");
