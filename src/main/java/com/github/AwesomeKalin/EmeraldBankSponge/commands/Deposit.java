@@ -87,7 +87,11 @@ public class Deposit implements CommandExecutor {
                 src.sendMessage(Text.of("Value must be an integer! See /eb help"));
             }
         }
-
+        config.getConfig().getNode("bank.banks").setValue(bankNames);
+        config.getConfig().getNode("bank.emeralds").setValue(bankEmeralds);
+        config.getConfig().getNode("bank.iron").setValue(bankIron);
+        config.saveConfig();
+        config.loadConfig();
         return CommandResult.success();
     }
 }

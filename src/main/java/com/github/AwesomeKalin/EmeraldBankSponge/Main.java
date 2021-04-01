@@ -75,12 +75,23 @@ public class Main {
                 )
                 .executor(new Deposit())
                 .build();
+        CommandSpec atm = CommandSpec.builder()
+                .description(Text.of("Take emeralds and/or iron out of the specified bank"))
+                .permission("emeraldbank-sponge.commands.atm")
+                .arguments(
+                        GenericArguments.onlyOne(GenericArguments.player(Text.of("name"))),
+                        GenericArguments.onlyOne(GenericArguments.player(Text.of("emeralds"))),
+                        GenericArguments.onlyOne(GenericArguments.player(Text.of("iron")))
+                )
+                .executor(new Atm())
+                .build();
         CommandSpec noArgs = CommandSpec.builder()
                 .description(Text.of("Throws an error. Instead do /eb help to see what to do"))
                 .executor(new NoArgs())
                 .child(help, "help")
                 .child(new1, "new")
                 .child(deposit, "deposit")
+                .child(atm, "atm")
                 .build();
 
         Sponge.getCommandManager().register(plugin, noArgs, "emeraldbank", "eb", "bank", "emerald", "banking");
